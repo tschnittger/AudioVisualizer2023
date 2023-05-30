@@ -19,7 +19,12 @@
  - Wie individuelle Aspekte eines Visualizers enstehen
 
 # 11.5.23 - 18.5.23
-
+ 
 ## Pläne für die Woche
  - Komplexere Visualizer einbauen
  - verstehen
+
+# 18.5.23 - 1.6.23
+- Verschiedene neue Patterns erstellt
+- In Framework weiter hineingearbeitet 
+- Verständnis weiter Vertieft
