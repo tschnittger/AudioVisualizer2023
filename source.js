@@ -6,6 +6,13 @@ canvas.height = window.innerHeight;
 const ctx = canvas.getContext('2d');
 let audioSource;
 let analyser;
+const selection = document.getElementById('pattern-select');
+let pattern = 'standard';
+
+selection.addEventListener('change', function(){
+    pattern = selection.value;
+})
+
 /*
 container.addEventListener('click', function(){
     const audio1 = document.getElementById('audio1');
@@ -59,8 +66,29 @@ file.addEventListener('change', function () {
         x = 0;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         analyser.getByteFrequencyData(dataArray);
-        drawCurvesVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
-        requestAnimationFrame(animate);
+        switch(pattern){
+            case 'standard':
+                drawVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
+                requestAnimationFrame(animate);
+                break;
+            case 'circular':
+                drawSpiralVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
+                requestAnimationFrame(animate);
+                break;
+            case 'cirlces':
+                drawCirclesVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
+                requestAnimationFrame(animate);
+                break;
+            case 'lines':
+                drawLinesVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
+                requestAnimationFrame(animate);
+                break;
+            case 'spiral':
+                drawCurvesVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
+                requestAnimationFrame(animate);
+                break;
+            
+        }
     }
     animate();
 })
