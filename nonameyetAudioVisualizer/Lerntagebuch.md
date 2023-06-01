@@ -28,3 +28,4 @@
 - Verschiedene neue Patterns erstellt
 - In Framework weiter hineingearbeitet 
 - Verständnis weiter Vertieft
+ca 2 std

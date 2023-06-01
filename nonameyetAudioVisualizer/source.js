@@ -13,35 +13,6 @@ selection.addEventListener('change', function(){
     pattern = selection.value;
 })
 
-/*
-container.addEventListener('click', function(){
-    const audio1 = document.getElementById('audio1');
-    const audioCtx = new AudioContext();
-    audioSource = audioCtx.createMediaElementSource(audio1);
-    analyser = audioCtx.createAnalyser();
-    audioSource.connect(analyser);
-    analyser.connect(audioCtx.destination);
-    analyser.fftSize = 128; //NUM of Bars
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    //Start drawing
-
-    //width of bar = canvas/bars
-    const barWidth = canvas.width/bufferLength;
-    let barHeight;
-    let x;
-    
-    function animate(){
-        x=0;
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        analyser.getByteFrequencyData(dataArray);
-        drawCircleVisualiser(bufferLength, x, barWidth, barHeight, dataArray)
-        requestAnimationFrame(animate);
-    }
-    animate();
-});*/
-
 file.addEventListener('change', function () {
     const files = this.files;
     const audio1 = document.getElementById('audio1');
@@ -87,11 +58,16 @@ file.addEventListener('change', function () {
                 drawCurvesVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
                 requestAnimationFrame(animate);
                 break;
+            case 'angular':
+                drawAngularVisualizer(bufferLength, x, barWidth, barHeight, dataArray);
+                requestAnimationFrame(animate);
+                break;
             
         }
     }
     animate();
 })
+
 function drawVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     for (let i = 0; i < bufferLength; i++) {
         barHeight = dataArray[i];
@@ -126,18 +102,24 @@ function drawSpiralVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
 
 function drawCirclesVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     for (let i = 0; i < bufferLength; i++) {
-        barHeight = dataArray[i] * 1.2;
-
+        barHeight = dataArray[i] * 1.4;
+        
         ctx.beginPath();
         const red = i * barHeight / 20;
         const green = i * 4;
         const blue = barHeight / 2;
-
+        
 
         ctx.fillStyle = 'rgb(' + red + ',' + green + ',' + blue + ')';
         ctx.arc(x, canvas.height - barHeight, barHeight / 10, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height - barHeight-90, barHeight/ 10, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height - barHeight-180, barHeight/ 10, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height - barHeight-270, barHeight/ 10, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height - barHeight+90, barHeight/ 10, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height - barHeight+180, barHeight/ 10, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height - barHeight+270, barHeight/ 10, 0, 2 * Math.PI);
         ctx.fill();
-        x += 50;
+        x += 70;
 
     }
 }
@@ -189,3 +171,22 @@ function drawCurvesVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     }
 }
 
+function drawAngularVisualizer(bufferLength, x, barWidth, barHeight, dataArray){
+    for (let i = 0; i < bufferLength; i++) {
+
+        barHeight = dataArray[i];
+        var angle = dataArray[i]/400 * Math.PI*2;
+
+        ctx.beginPath();
+        var seed = i + 1;
+    
+        const red = i * barHeight / 20;
+        const green = i * 4;
+        const blue = barHeight / 2;
+
+        ctx.fillStyle = 'rgb(' + red + ',' + green + ',' + blue + ')';
+        ctx.arc(x, canvas.height/2, 30, 0, angle);
+        ctx.fill();
+        x += 100;
+    }
+}
