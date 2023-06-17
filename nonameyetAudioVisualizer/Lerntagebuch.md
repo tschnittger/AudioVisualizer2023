@@ -29,3 +29,11 @@
 - In Framework weiter hineingearbeitet 
 - Verständnis weiter Vertieft
 ca 2 std
+
+# 1.6.23 - 15.6.23
+- Recherche zu live-input
+- Recherche zu Daten auswertung
+- Versuche zu live input (Fehlgeschlagen)
+- Versuche mit Daten (Zu nichts geführt)
+- Versuche von "lebendigeren" Mustern
+- Neues Muster implementiert

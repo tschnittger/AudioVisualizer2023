@@ -62,7 +62,14 @@ file.addEventListener('change', function () {
                 drawAngularVisualizer(bufferLength, x, barWidth, barHeight, dataArray);
                 requestAnimationFrame(animate);
                 break;
-            
+            case 'trippy':
+                drawTrippyVisualizer(bufferLength, x, barWidth, barHeight, dataArray);
+                requestAnimationFrame(animate);
+                break;
+            case 'optical':
+                drawOpticalVisualizer(bufferLength, x, barWidth, barHeight, dataArray);
+                requestAnimationFrame(animate);
+                break;
         }
     }
     animate();
@@ -178,7 +185,6 @@ function drawAngularVisualizer(bufferLength, x, barWidth, barHeight, dataArray){
         var angle = dataArray[i]/400 * Math.PI*2;
 
         ctx.beginPath();
-        var seed = i + 1;
     
         const red = i * barHeight / 20;
         const green = i * 4;
@@ -189,4 +195,59 @@ function drawAngularVisualizer(bufferLength, x, barWidth, barHeight, dataArray){
         ctx.fill();
         x += 100;
     }
+}
+
+function drawTrippyVisualizer(bufferLength, x, barWidth, barHeight, dataArray) {
+    for (let i = 0; i < bufferLength; i++) {
+        barHeight = dataArray[i] * 1.2;
+
+        ctx.beginPath();
+
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(i * bufferLength );
+
+        const red = Math.sin(i * barHeight / 10) * 255;
+        const green = Math.cos(i * barHeight / 5) * 255;
+        const blue = Math.tan(i * barHeight / 7) * 255;
+        ctx.strokeStyle = 'rgb(' + red + ',' + green + ',' + blue + ')';
+        ctx.shadowColor = "blue";
+        ctx.shadowBlur = 10;
+        ctx.moveTo(x, canvas.height - barHeight);
+        ctx.lineTo(x + barWidth, barHeight);
+        x += 1;
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function drawOpticalVisualizer(bufferLength, x, barWidth, barHeight, dataArray) {
+    const centerY = canvas.height / 2;
+    const maxAmplitude = canvas.height / 2;
+    const angleIncrement = (Math.PI * 2) / bufferLength;
+    const radiusMultiplier = 0.8;
+
+    ctx.lineWidth = barWidth;
+
+    for (let i = 0; i < bufferLength; i++) {
+        const amplitude = dataArray[i] * maxAmplitude;
+        const angle = i * angleIncrement;
+        const radius = radiusMultiplier * amplitude;
+
+        const xPos = x + Math.cos(angle) * radius;
+        const yPos = centerY + Math.sin(angle) * radius;
+
+        const hue = (i / bufferLength) * 360;
+        const saturation = 100;
+        const lightness = 50 - (amplitude * 0.4);
+
+        ctx.strokeStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+
+        ctx.beginPath();
+        ctx.moveTo(x, centerY);
+        ctx.lineTo(xPos, yPos);
+        ctx.stroke();
+
+        x += barWidth;
+    }    
 }
