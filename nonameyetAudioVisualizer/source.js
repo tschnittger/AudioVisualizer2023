@@ -9,7 +9,7 @@ let analyser;
 const selection = document.getElementById('pattern-select');
 let pattern = 'standard';
 
-selection.addEventListener('change', function(){
+selection.addEventListener('change', function () {
     pattern = selection.value;
 })
 
@@ -37,7 +37,7 @@ file.addEventListener('change', function () {
         x = 0;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         analyser.getByteFrequencyData(dataArray);
-        switch(pattern){
+        switch (pattern) {
             case 'standard':
                 drawVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
                 requestAnimationFrame(animate);
@@ -68,6 +68,10 @@ file.addEventListener('change', function () {
                 break;
             case 'optical':
                 drawOpticalVisualizer(bufferLength, x, barWidth, barHeight, dataArray);
+                requestAnimationFrame(animate);
+                break;
+            case 'guitar':
+                guitarVisualiser(bufferLength, dataArray);
                 requestAnimationFrame(animate);
                 break;
         }
@@ -110,21 +114,21 @@ function drawSpiralVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
 function drawCirclesVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     for (let i = 0; i < bufferLength; i++) {
         barHeight = dataArray[i] * 1.4;
-        
+
         ctx.beginPath();
         const red = i * barHeight / 20;
         const green = i * 4;
         const blue = barHeight / 2;
-        
+
 
         ctx.fillStyle = 'rgb(' + red + ',' + green + ',' + blue + ')';
         ctx.arc(x, canvas.height - barHeight, barHeight / 10, 0, 2 * Math.PI);
-        ctx.arc(x, canvas.height - barHeight-90, barHeight/ 10, 0, 2 * Math.PI);
-        ctx.arc(x, canvas.height - barHeight-180, barHeight/ 10, 0, 2 * Math.PI);
-        ctx.arc(x, canvas.height - barHeight-270, barHeight/ 10, 0, 2 * Math.PI);
-        ctx.arc(x, canvas.height - barHeight+90, barHeight/ 10, 0, 2 * Math.PI);
-        ctx.arc(x, canvas.height - barHeight+180, barHeight/ 10, 0, 2 * Math.PI);
-        ctx.arc(x, canvas.height - barHeight+270, barHeight/ 10, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height - barHeight - 90, barHeight / 10, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height - barHeight - 180, barHeight / 10, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height - barHeight - 270, barHeight / 10, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height - barHeight + 90, barHeight / 10, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height - barHeight + 180, barHeight / 10, 0, 2 * Math.PI);
+        ctx.arc(x, canvas.height - barHeight + 270, barHeight / 10, 0, 2 * Math.PI);
         ctx.fill();
         x += 70;
 
@@ -139,7 +143,7 @@ function drawLinesVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
 
         ctx.save();
         ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(i * bufferLength );
+        ctx.rotate(i * bufferLength);
 
         const red = i * barHeight / 14;
         const green = i * 2;
@@ -171,27 +175,27 @@ function drawCurvesVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
         ctx.strokeStyle = 'rgb(' + red + ',' + green + ',' + blue + ')';
         ctx.shadowColor = "red";
         ctx.shadowBlur = 15;
-        ctx.arc(x/10, canvas.height-barHeight/2, x+barWidth, 0, x * Math.PI);
+        ctx.arc(x / 10, canvas.height - barHeight / 2, x + barWidth, 0, x * Math.PI);
         x += 4;
         ctx.stroke();
         ctx.restore();
     }
 }
 
-function drawAngularVisualizer(bufferLength, x, barWidth, barHeight, dataArray){
+function drawAngularVisualizer(bufferLength, x, barWidth, barHeight, dataArray) {
     for (let i = 0; i < bufferLength; i++) {
 
         barHeight = dataArray[i];
-        var angle = dataArray[i]/400 * Math.PI*2;
+        var angle = dataArray[i] / 400 * Math.PI * 2;
 
         ctx.beginPath();
-    
+
         const red = i * barHeight / 20;
         const green = i * 4;
         const blue = barHeight / 2;
 
         ctx.fillStyle = 'rgb(' + red + ',' + green + ',' + blue + ')';
-        ctx.arc(x, canvas.height/2, 30, 0, angle);
+        ctx.arc(x, canvas.height / 2, 30, 0, angle);
         ctx.fill();
         x += 100;
     }
@@ -205,7 +209,7 @@ function drawTrippyVisualizer(bufferLength, x, barWidth, barHeight, dataArray) {
 
         ctx.save();
         ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(i * bufferLength );
+        ctx.rotate(i * bufferLength);
 
         const red = Math.sin(i * barHeight / 10) * 255;
         const green = Math.cos(i * barHeight / 5) * 255;
@@ -249,5 +253,77 @@ function drawOpticalVisualizer(bufferLength, x, barWidth, barHeight, dataArray) 
         ctx.stroke();
 
         x += barWidth;
-    }    
+    }
+}
+
+function guitarVisualiser(bufferLength, dataArray) {
+    yTop = canvas.height * 0.6;
+    yBot = canvas.height * 0.3;
+
+    let strings=[];
+    let bars = [];
+
+    ctx.strokeStyle = 'rgb(255, 255, 255)';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(0, yTop);
+    ctx.lineTo(canvas.width, yTop);
+    ctx.moveTo(0, yBot);
+    ctx.lineTo(canvas.width, yBot);
+
+    barWidth = canvas.width/23;
+    let o = 0;
+    while(o<canvas.width){
+        ctx.moveTo(o, yTop);
+        ctx.lineTo(o, yBot);
+        bars.push(o);
+        o += barWidth;
+    }
+    ctx.stroke();
+
+    ctx.beginPath();
+
+    ctx.strokeStyle = 'rgb(153, 153, 153)';
+    ctx.lineWidth = 3;
+    let guitarHeight = (yTop-yBot);
+    let stringDistance = guitarHeight / 7;
+    let string = yBot+stringDistance;
+    while(string<yTop){
+        if(Math.floor(string) != Math.floor(yTop)){
+            ctx.moveTo(0, string);
+            ctx.lineTo(canvas.width, string);
+            strings.push(string);
+        }
+        string += stringDistance;
+    }
+    ctx.stroke(); 
+
+    for (let i = 0; i < bufferLength; i++) {  
+        let alpha = 1;
+        const fadeSpeed = 0.005; 
+
+        while (alpha > 0) {
+            ctx.globalAlpha = alpha; 
+
+            const red = Math.floor(dataArray[i] / bufferLength * 255); 
+            const green = 0; 
+            const blue = Math.floor((bufferLength - i) / bufferLength * 255);
+
+            ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`; 
+            ctx.beginPath();
+            x = bars[Math.floor(Math.random() * bars.length)];
+            y = strings[Math.floor(Math.random() * strings.length)];
+            if (dataArray[i] > 150 && Math.random() <0.005) {
+                ctx.arc(x, y, dataArray[i] / 10, 0, 2 * Math.PI);
+            }
+            ctx.fill();
+
+            alpha -= fadeSpeed;
+
+            if (alpha <= 0) {
+                ctx.globalAlpha = 1;
+                break;
+            }
+        }
+    }
 }
