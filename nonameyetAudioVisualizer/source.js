@@ -8,6 +8,7 @@ let audioSource;
 let analyser;
 const selection = document.getElementById('pattern-select');
 let pattern = 'standard';
+let effect=null;
 
 selection.addEventListener('change', function () {
     pattern = selection.value;
@@ -73,6 +74,10 @@ file.addEventListener('change', function () {
             case 'guitar':
                 guitarVisualiser(bufferLength, dataArray);
                 requestAnimationFrame(animate);
+                break;
+            case 'flowfield':
+                drawFlowFieldVisualiser(bufferLength, dataArray);
+                animateFlowField();
                 break;
         }
     }
@@ -260,7 +265,7 @@ function guitarVisualiser(bufferLength, dataArray) {
     yTop = canvas.height * 0.6;
     yBot = canvas.height * 0.3;
 
-    let strings=[];
+    let strings = [];
     let bars = [];
 
     ctx.strokeStyle = 'rgb(255, 255, 255)';
@@ -271,9 +276,9 @@ function guitarVisualiser(bufferLength, dataArray) {
     ctx.moveTo(0, yBot);
     ctx.lineTo(canvas.width, yBot);
 
-    barWidth = canvas.width/23;
+    barWidth = canvas.width / 23;
     let o = 0;
-    while(o<canvas.width){
+    while (o < canvas.width) {
         ctx.moveTo(o, yTop);
         ctx.lineTo(o, yBot);
         bars.push(o);
@@ -285,35 +290,35 @@ function guitarVisualiser(bufferLength, dataArray) {
 
     ctx.strokeStyle = 'rgb(153, 153, 153)';
     ctx.lineWidth = 3;
-    let guitarHeight = (yTop-yBot);
+    let guitarHeight = (yTop - yBot);
     let stringDistance = guitarHeight / 7;
-    let string = yBot+stringDistance;
-    while(string<yTop){
-        if(Math.floor(string) != Math.floor(yTop)){
+    let string = yBot + stringDistance;
+    while (string < yTop) {
+        if (Math.floor(string) != Math.floor(yTop)) {
             ctx.moveTo(0, string);
             ctx.lineTo(canvas.width, string);
             strings.push(string);
         }
         string += stringDistance;
     }
-    ctx.stroke(); 
+    ctx.stroke();
 
-    for (let i = 0; i < bufferLength; i++) {  
+    for (let i = 0; i < bufferLength; i++) {
         let alpha = 1;
-        const fadeSpeed = 0.005; 
+        const fadeSpeed = 0.005;
 
         while (alpha > 0) {
-            ctx.globalAlpha = alpha; 
+            ctx.globalAlpha = alpha;
 
-            const red = Math.floor(dataArray[i] / bufferLength * 255); 
-            const green = 0; 
+            const red = Math.floor(dataArray[i] / bufferLength * 255);
+            const green = 0;
             const blue = Math.floor((bufferLength - i) / bufferLength * 255);
 
-            ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`; 
+            ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
             ctx.beginPath();
             x = bars[Math.floor(Math.random() * bars.length)];
             y = strings[Math.floor(Math.random() * strings.length)];
-            if (dataArray[i] > 150 && Math.random() <0.005) {
+            if (dataArray[i] > 150 && Math.random() < 0.005) {
                 ctx.arc(x, y, dataArray[i] / 10, 0, 2 * Math.PI);
             }
             ctx.fill();
@@ -326,4 +331,124 @@ function guitarVisualiser(bufferLength, dataArray) {
             }
         }
     }
+}
+class Particle {
+    constructor(Effect, bufferLength, dataArray) {
+        this.Effect = Effect;
+        this.bufferLength = bufferLength;
+        this.dataArray = dataArray;
+        this.x = Math.floor(Math.random() * this.Effect.width);
+        this.y = Math.floor(Math.random() * this.Effect.height);
+        this.speedX;
+        this.speedY;
+        //this.speedModifier = Math.random() * this.dataArray[Math.floor(Math.random()*this.dataArray.length)];
+        this.speedModifier = 1.2;
+        this.history = [{ x: this.x, y: this.y }];
+        this.maxLength = Math.floor(Math.random() * 500 + 10);
+        this.angle = 0;
+        this.timer = this.maxLength*2;
+    }
+    draw(context) {
+        context.beginPath();
+        context.moveTo(this.history[0].x, this.history[0].y);
+        for (let i = 0; i < this.history.length; i++) {
+            context.lineTo(this.history[i].x, this.history[i].y);
+        }
+        context.stroke();
+    }
+    update() {
+        this.timer--;
+        if(this.timer >= 1){
+            let x = Math.floor(this.x / this.Effect.cellSize);
+            let y = Math.floor(this.y / this.Effect.cellSize);
+            let index = y * this.Effect.cols + x;
+            this.angle = this.Effect.flowField[index];
+
+            this.speedX = Math.cos(this.angle);
+            this.speedY = Math.sin(this.angle);
+            this.x += this.speedX*this.speedModifier;
+            this.y += this.speedY*this.speedModifier;
+
+            this.history.push({ x: this.x, y: this.y });
+            if (this.history.length > this.maxLength) {
+                this.history.shift();
+            }
+        }else if(this.history.length>1){  
+            this.history.shift();
+        } else {
+            this.reset(); 
+        }
+    }
+    reset(){
+        this.x = Math.floor(Math.random() * this.Effect.width);
+        this.y = Math.floor(Math.random() * this.Effect.height);
+        this.history = [{ x: this.x, y: this.y }];
+        this.timer = this.maxLength * 2;
+    }
+}
+
+class Effect {
+    constructor(width, height, numberOfParticles, bufferLength, dataArray) {
+        this.bufferLength = bufferLength;
+        this.dataArray = dataArray;
+        this.width = width;
+        this.height = height;
+        this.particles = [];
+        this.numberOfParticles = numberOfParticles;
+        this.cellSize = 20;
+        this.rows;
+        this.cols;
+        this.flowField = [];
+        this.curve = 2.2;
+        this.zoom = 0.11;
+        this.bufferLength;
+        this.dataArray;
+        this.init();
+    }
+    init() {
+        //Create flow field
+        this.rows = Math.floor(this.height / this.cellSize);
+        this.cols = Math.floor(this.width / this.cellSize);
+        this.flowField = [];
+        for (let y = 0; y < this.rows; y++) {
+            for (let x = 0; x < this.cols; x++) {
+                let angle = (Math.cos(x * this.zoom) + Math.sin(y * this.zoom)) * this.curve;
+                this.flowField.push(angle);
+            }
+        }
+
+        //Create particles
+        for (let i = 0; i < this.numberOfParticles; i++) {
+            this.particles.push(new Particle(this, this.bufferLength, this.dataArray));
+        }
+    }
+    render(context) {
+        this.particles.forEach(Particle => {
+            Particle.draw(context);
+            Particle.update();
+        })
+    }
+}
+
+ 
+function drawFlowFieldVisualiser(bufferLength, dataArray) {
+    console.log(dataArray);
+    console.log(this.bufferLength);
+    effect = new Effect(canvas.width, canvas.height, 2000, bufferLength, dataArray);
+    ctx.fillStyle = 'white';
+    ctx.strokeStyle = 'white';
+    const red = Math.floor(dataArray[0] / bufferLength * 255);
+    const green = 0;
+    const blue = Math.floor((bufferLength ) / bufferLength * 255);
+
+    ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
+    //ctx.strokeStyle = `rgb(${red}, ${green}, ${blue})`;
+    effect.bufferLength = bufferLength;
+    effect.dataArray = dataArray;
+}
+
+function animateFlowField() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    effect.render(ctx);
+    requestAnimationFrame(animateFlowField);
 }
