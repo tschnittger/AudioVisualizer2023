@@ -1,3 +1,7 @@
+
+//Number of particles, adjust to match your devices performance
+const FlowFieldElements = 400;
+
 const container = document.getElementById('container');
 const canvas = document.getElementById('canvas1');
 const file = document.getElementById('fileupload');
@@ -16,9 +20,12 @@ selection.addEventListener('change', function () {
 })
 
 file.addEventListener('change', function () {
+    
+    //Setup for analysis of audio and visualizing it 
     const files = this.files;
     const audio1 = document.getElementById('audio1');
     const audioCtx = new AudioContext();
+
     audio1.src = URL.createObjectURL(files[0]);
     audio1.load();
     audio1.play();
@@ -27,19 +34,21 @@ file.addEventListener('change', function () {
     analyser = audioCtx.createAnalyser();
     audioSource.connect(analyser);
     analyser.connect(audioCtx.destination);
-    analyser.fftSize = 256; //NUM of Bars
+    analyser.fftSize = 256; 
+
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
 
     const barWidth = canvas.width / bufferLength;
     let barHeight;
     let x;
-    effect = new Effect(canvas.width, canvas.height, 1000, bufferLength, dataArray);
 
     function animate() {
         x = 0;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         analyser.getByteFrequencyData(dataArray);
+        
+        //Choose pattern
         switch (pattern) {
             case 'standard':
                 effect = null;    
@@ -76,11 +85,6 @@ file.addEventListener('change', function () {
                 drawTrippyVisualizer(bufferLength, x, barWidth, barHeight, dataArray);
                 requestAnimationFrame(animate);
                 break;
-            case 'optical':
-                effect = null;    
-                drawOpticalVisualizer(bufferLength, x, barWidth, barHeight, dataArray);
-                requestAnimationFrame(animate);
-                break;
             case 'guitar':
                 effect = null;    
                 guitarVisualiser(bufferLength, dataArray);
@@ -88,7 +92,7 @@ file.addEventListener('change', function () {
                 break;
             case 'flowfield':
                 if(effect == null){
-                    effect = new Effect(canvas.width, canvas.height, 1000, bufferLength, dataArray);
+                    effect = new Effect(canvas.width, canvas.height, FlowFieldElements, bufferLength, dataArray);
                 }
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 drawFlowFieldVisualiser(bufferLength, dataArray);
@@ -100,6 +104,7 @@ file.addEventListener('change', function () {
     animate();
 })
 
+//Regular bar visualizer
 function drawVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     for (let i = 0; i < bufferLength; i++) {
         barHeight = dataArray[i];
@@ -113,6 +118,7 @@ function drawVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     }
 }
 
+//Bar visualizer, but as a spiral
 function drawSpiralVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     for (let i = 0; i < bufferLength; i++) {
         barHeight = dataArray[i] * 1.2;
@@ -132,6 +138,7 @@ function drawSpiralVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     }
 }
 
+//Instead of bars, there are circles
 function drawCirclesVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     for (let i = 0; i < bufferLength; i++) {
         barHeight = dataArray[i] * 1.4;
@@ -156,6 +163,7 @@ function drawCirclesVisualiser(bufferLength, x, barWidth, barHeight, dataArray) 
     }
 }
 
+//Visualiser with lines 
 function drawLinesVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     for (let i = 0; i < bufferLength; i++) {
         barHeight = dataArray[i] * 1.2;
@@ -180,6 +188,7 @@ function drawLinesVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     }
 }
 
+//Vibrating cirlces
 function drawCurvesVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     for (let i = 0; i < bufferLength; i++) {
         barHeight = dataArray[i];
@@ -203,6 +212,7 @@ function drawCurvesVisualiser(bufferLength, x, barWidth, barHeight, dataArray) {
     }
 }
 
+//Another experiment
 function drawAngularVisualizer(bufferLength, x, barWidth, barHeight, dataArray) {
     for (let i = 0; i < bufferLength; i++) {
 
@@ -222,6 +232,7 @@ function drawAngularVisualizer(bufferLength, x, barWidth, barHeight, dataArray) 
     }
 }
 
+//Trippy looking visualizer
 function drawTrippyVisualizer(bufferLength, x, barWidth, barHeight, dataArray) {
     for (let i = 0; i < bufferLength; i++) {
         barHeight = dataArray[i] * 1.2;
@@ -246,6 +257,7 @@ function drawTrippyVisualizer(bufferLength, x, barWidth, barHeight, dataArray) {
     }
 }
 
+//Failed experiment, remains here till fixed
 function drawOpticalVisualizer(bufferLength, x, barWidth, barHeight, dataArray) {
     const centerY = canvas.height / 2;
     const maxAmplitude = canvas.height / 2;
@@ -277,6 +289,7 @@ function drawOpticalVisualizer(bufferLength, x, barWidth, barHeight, dataArray) 
     }
 }
 
+//Resembles a guitar neck, still in development
 function guitarVisualiser(bufferLength, dataArray) {
     yTop = canvas.height * 0.6;
     yBot = canvas.height * 0.3;
@@ -349,6 +362,7 @@ function guitarVisualiser(bufferLength, dataArray) {
     }
 }
 
+//Single element of flow field
 class Particle {
     constructor(Effect, bufferLength, dataArray) {
         this.Effect = Effect;
@@ -365,6 +379,7 @@ class Particle {
         this.timer = this.maxLength * 2;
 
     }
+    //Draws the particle
     draw(context) {
         context.beginPath();
         context.moveTo(this.history[0].x, this.history[0].y);
@@ -372,11 +387,9 @@ class Particle {
             context.lineTo(this.history[i].x, this.history[i].y);
         }
         context.strokeStyle = mapNumberToRGB(this.dataArray[positionInArray]);
-        if(this.dataArray[positionInArray]%16==0){
-            //context.strokeStyle = calculateRGB(this.dataArray[positionInArray]);
-        }
         context.stroke();
     }
+    //Updates position and other elements of particle
     update() {
         //adjust speed to music
         if ((this.dataArray[positionInArray]) > 65) {
@@ -414,8 +427,8 @@ class Particle {
             this.reset();
         }
     }
+    //reset particle
     reset() {
-        //reset particle
         this.x = Math.floor(Math.random() * this.Effect.width);
         this.y = Math.floor(Math.random() * this.Effect.height);
         this.history = [{ x: this.x, y: this.y }];
@@ -423,6 +436,7 @@ class Particle {
     }
 }
 
+//Flow Field 
 class Effect {
     constructor(width, height, numberOfParticles, bufferLength, dataArray) {
         this.bufferLength = bufferLength;
@@ -434,11 +448,9 @@ class Effect {
         this.cellSize = 20;
         this.rows;
         this.cols;
-        this.flowField = [];
+        this.flowField;
         this.curve = 2.6;
         this.zoom = 0.11;
-        this.bufferLength;
-        this.dataArray;
         this.init(bufferLength);
     }
     init(bufferLength) {
