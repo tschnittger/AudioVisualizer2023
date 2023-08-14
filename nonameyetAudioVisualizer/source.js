@@ -8,7 +8,8 @@ let audioSource;
 let analyser;
 const selection = document.getElementById('pattern-select');
 let pattern = 'standard';
-let effect=null;
+let effect = null;
+let positionInArray = 0;
 
 selection.addEventListener('change', function () {
     pattern = selection.value;
@@ -33,6 +34,7 @@ file.addEventListener('change', function () {
     const barWidth = canvas.width / bufferLength;
     let barHeight;
     let x;
+    effect = new Effect(canvas.width, canvas.height, 1000, bufferLength, dataArray);
 
     function animate() {
         x = 0;
@@ -40,44 +42,58 @@ file.addEventListener('change', function () {
         analyser.getByteFrequencyData(dataArray);
         switch (pattern) {
             case 'standard':
+                effect = null;    
                 drawVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
                 requestAnimationFrame(animate);
                 break;
             case 'circular':
+                effect = null;    
                 drawSpiralVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
                 requestAnimationFrame(animate);
                 break;
             case 'cirlces':
+                effect = null;    
                 drawCirclesVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
                 requestAnimationFrame(animate);
                 break;
             case 'lines':
+                effect = null;    
                 drawLinesVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
                 requestAnimationFrame(animate);
                 break;
             case 'spiral':
+                effect = null;    
                 drawCurvesVisualiser(bufferLength, x, barWidth, barHeight, dataArray);
                 requestAnimationFrame(animate);
                 break;
             case 'angular':
+                effect = null;    
                 drawAngularVisualizer(bufferLength, x, barWidth, barHeight, dataArray);
                 requestAnimationFrame(animate);
                 break;
             case 'trippy':
+                effect = null;    
                 drawTrippyVisualizer(bufferLength, x, barWidth, barHeight, dataArray);
                 requestAnimationFrame(animate);
                 break;
             case 'optical':
+                effect = null;    
                 drawOpticalVisualizer(bufferLength, x, barWidth, barHeight, dataArray);
                 requestAnimationFrame(animate);
                 break;
             case 'guitar':
+                effect = null;    
                 guitarVisualiser(bufferLength, dataArray);
                 requestAnimationFrame(animate);
                 break;
             case 'flowfield':
+                if(effect == null){
+                    effect = new Effect(canvas.width, canvas.height, 1000, bufferLength, dataArray);
+                }
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 drawFlowFieldVisualiser(bufferLength, dataArray);
-                animateFlowField();
+                effect.render(ctx);
+                requestAnimationFrame(animate);
                 break;
         }
     }
@@ -332,6 +348,7 @@ function guitarVisualiser(bufferLength, dataArray) {
         }
     }
 }
+
 class Particle {
     constructor(Effect, bufferLength, dataArray) {
         this.Effect = Effect;
@@ -341,12 +358,12 @@ class Particle {
         this.y = Math.floor(Math.random() * this.Effect.height);
         this.speedX;
         this.speedY;
-        //this.speedModifier = Math.random() * this.dataArray[Math.floor(Math.random()*this.dataArray.length)];
-        this.speedModifier = 1.2;
+        this.speedModifier = 1;
         this.history = [{ x: this.x, y: this.y }];
         this.maxLength = Math.floor(Math.random() * 500 + 10);
         this.angle = 0;
-        this.timer = this.maxLength*2;
+        this.timer = this.maxLength * 2;
+
     }
     draw(context) {
         context.beginPath();
@@ -354,11 +371,29 @@ class Particle {
         for (let i = 0; i < this.history.length; i++) {
             context.lineTo(this.history[i].x, this.history[i].y);
         }
+        context.strokeStyle = mapNumberToRGB(this.dataArray[positionInArray]);
+        if(this.dataArray[positionInArray]%16==0){
+            //context.strokeStyle = calculateRGB(this.dataArray[positionInArray]);
+        }
         context.stroke();
     }
     update() {
+        //adjust speed to music
+        if ((this.dataArray[positionInArray]) > 65) {
+            this.speedModifier = Math.random() + 1.5 + 1.2;
+        } else {
+            this.speedModifier = Math.random() + 0.9 + 0.7;
+        }
+        
+        //handle array position 
+        if (positionInArray >= this.dataArray.length) {
+            positionInArray = 0;
+        } else {
+            positionInArray++;
+        }
+        //handle history
         this.timer--;
-        if(this.timer >= 1){
+        if (this.timer >= 1) {
             let x = Math.floor(this.x / this.Effect.cellSize);
             let y = Math.floor(this.y / this.Effect.cellSize);
             let index = y * this.Effect.cols + x;
@@ -366,20 +401,21 @@ class Particle {
 
             this.speedX = Math.cos(this.angle);
             this.speedY = Math.sin(this.angle);
-            this.x += this.speedX*this.speedModifier;
-            this.y += this.speedY*this.speedModifier;
+            this.x += this.speedX * this.speedModifier;
+            this.y += this.speedY * this.speedModifier;
 
             this.history.push({ x: this.x, y: this.y });
             if (this.history.length > this.maxLength) {
                 this.history.shift();
             }
-        }else if(this.history.length>1){  
+        } else if (this.history.length > 1) {
             this.history.shift();
         } else {
-            this.reset(); 
+            this.reset();
         }
     }
-    reset(){
+    reset() {
+        //reset particle
         this.x = Math.floor(Math.random() * this.Effect.width);
         this.y = Math.floor(Math.random() * this.Effect.height);
         this.history = [{ x: this.x, y: this.y }];
@@ -399,13 +435,13 @@ class Effect {
         this.rows;
         this.cols;
         this.flowField = [];
-        this.curve = 2.2;
+        this.curve = 2.6;
         this.zoom = 0.11;
         this.bufferLength;
         this.dataArray;
-        this.init();
+        this.init(bufferLength);
     }
-    init() {
+    init(bufferLength) {
         //Create flow field
         this.rows = Math.floor(this.height / this.cellSize);
         this.cols = Math.floor(this.width / this.cellSize);
@@ -419,7 +455,7 @@ class Effect {
 
         //Create particles
         for (let i = 0; i < this.numberOfParticles; i++) {
-            this.particles.push(new Particle(this, this.bufferLength, this.dataArray));
+            this.particles.push(new Particle(this, bufferLength, this.dataArray));
         }
     }
     render(context) {
@@ -427,24 +463,26 @@ class Effect {
             Particle.draw(context);
             Particle.update();
         })
+        if(this.dataArray[positionInArray]%8==0){
+            this.curve = mapNumberToRange(this.dataArray[positionInArray],0,128,1,4);
+            //Acivate next line for more chaos 
+            //this.zoom = mapNumberToRange(this.dataArray[positionInArray],0,128,0.1,0.4);
+        }
+        this.flowField = [];
+        for (let y = 0; y < this.rows; y++) {
+            for (let x = 0; x < this.cols; x++) {
+                let angle = (Math.cos(x * this.zoom) + Math.sin(y * this.zoom)) * this.curve;
+                this.flowField.push(angle);
+            }
+        }
     }
 }
 
- 
-function drawFlowFieldVisualiser(bufferLength, dataArray) {
-    console.log(dataArray);
-    console.log(this.bufferLength);
-    effect = new Effect(canvas.width, canvas.height, 2000, bufferLength, dataArray);
-    ctx.fillStyle = 'white';
-    ctx.strokeStyle = 'white';
-    const red = Math.floor(dataArray[0] / bufferLength * 255);
-    const green = 0;
-    const blue = Math.floor((bufferLength ) / bufferLength * 255);
 
-    ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
-    //ctx.strokeStyle = `rgb(${red}, ${green}, ${blue})`;
+function drawFlowFieldVisualiser(bufferLength, dataArray) {
     effect.bufferLength = bufferLength;
     effect.dataArray = dataArray;
+    effect.render(ctx);
 }
 
 function animateFlowField() {
@@ -452,3 +490,55 @@ function animateFlowField() {
     effect.render(ctx);
     requestAnimationFrame(animateFlowField);
 }
+
+
+function mapNumberToRange(number, fromMin, fromMax, toMin, toMax) {
+    // Ensure the number is within the given range
+    number = Math.max(Math.min(number, fromMax), fromMin);
+  
+    // Calculate the normalized value between 0 and 1
+    const normalizedValue = (number - fromMin) / (fromMax - fromMin);
+  
+    // Map the normalized value to the desired range (2 to 3)
+    const mappedValue = normalizedValue * (toMax - toMin) + toMin;
+  
+    return mappedValue;
+  }
+
+function mapNumberToRGB(number) {
+    // Ensure the number is within a valid range
+    number = Math.max(Math.min(number, 100), 0); // Adjust the range as needed
+  
+    // Convert the number to a hue value (0 to 1) and smooth it using a sinusoidal function
+    const hue = (Math.sin(number * 0.1) + 1) * 0.5;
+  
+    // Convert the hue to an RGB value
+    const rgb = hslToRgb(hue, 0.5, 0.5);
+  
+    return 'rgb(' + rgb[0] + ', ' + rgb[1] + ', ' + rgb[2] + ')';
+  }
+  
+  // Function to convert HSL to RGB
+  function hslToRgb(h, s, l) {
+    let r, g, b;
+  
+    if (s === 0) {
+      r = g = b = l; // achromatic
+    } else {
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+  
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1 / 3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1 / 3);
+    }
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+  }
